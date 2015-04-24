@@ -1,0 +1,46 @@
+.messageTable{
+    width: 100%;
+}
+
+.arrow{
+
+    text-align: right;
+}
+
+.firstColumn{
+    width: 4%;
+}
+
+.messageColumn{
+    width:  90%;
+}
+
+.editButtonColumn{
+    width: 3%;
+}
+
+.deleteButtonColumn{
+    width: 3%;
+}
+
+.divUserName{
+    display: inline-block;
+    text-align: left;
+    color: chartreuse;
+}
+
+.divMessageBox{
+    display: inline-block;
+    text-align: left;
+    width: 88%;
+    color: yellow;
+    word-wrap: break-word;
+}
+
+.editMessageButton{
+    width: 15px;
+    height: 15px;
+    border: 0px;
+    padding: 0px;
+}
+
