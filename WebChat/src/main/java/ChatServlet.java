@@ -9,6 +9,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.text.SimpleDateFormat;
 
@@ -19,6 +20,18 @@ public class ChatServlet extends HttpServlet {
 
     @Override
     public void init() throws ServletException {
+        try {
+            ArrayList<ArrayList<String> > messages = XMLUtil.readData();
+            for(int i = 0; i < messages.size(); i++) {
+                for(int j = 0; j < messages.get(i).size(); j++){
+                    System.out.print(messages.get(i).get(j) + " ");
+                }
+                System.out.println();
+            }
+        }
+        catch (Exception e){
+            System.out.println(e.getMessage());
+        }
     }
 
     @Override
