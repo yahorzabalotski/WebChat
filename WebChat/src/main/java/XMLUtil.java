@@ -3,6 +3,8 @@ import java.io.IOException;
 import java.lang.String;
 import java.lang.System;
 import java.util.ArrayList;
+import java.util.Date;
+import java.text.SimpleDateFormat;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -21,10 +23,20 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 public class XMLUtil{
+    private static SimpleDateFormat dateFormat = new SimpleDateFormat("dd-M-yyyy HH:mm ");
     private static final String STORAGE_LOCATION = System.getProperty("user.home") +  File.separator + "history.xml";
     private static final String MESSAGES = "messages";
+    private static final String MESSAGE = "message";
+    private static final String AUTHOR = "author";
+    private static final String TEXT = "text";
+    private static final String DATE = "date";
 
     public static ArrayList<ArrayList<String> > readData()
+            throws ParserConfigurationException, SAXException, IOException, TransformerException {
+        return read(getDoc());
+    }
+
+    private static Document getDoc()
             throws ParserConfigurationException, SAXException, IOException, TransformerException {
         if(!doesFileExsist()) {
             createFile();
@@ -33,7 +45,25 @@ public class XMLUtil{
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder documentBuilder = factory.newDocumentBuilder();
         Document document = documentBuilder.parse(new File(STORAGE_LOCATION));
-        return read(document);
+        return document;
+    }
+
+    public static void addMessage(Date date, String author, String text)
+            throws ParserConfigurationException, SAXException, IOException, TransformerException {
+        Document document = getDoc();
+        Element rootEl = document.getDocumentElement();
+        Element messageEl = document.createElement(MESSAGE);
+        Element authorEl = document.createElement(AUTHOR);
+        authorEl.appendChild(document.createTextNode(author));
+        messageEl.appendChild(authorEl);
+        Element textEl = document.createElement(TEXT);
+        textEl.appendChild(document.createTextNode(text));
+        messageEl.appendChild(textEl);
+        Element dateEl = document.createElement(DATE);
+        dateEl.appendChild(document.createTextNode(dateFormat.format(date)));
+        messageEl.appendChild(dateEl);
+        rootEl.appendChild(messageEl);
+        saveFile(document);
     }
 
     private static boolean doesFileExsist() {
@@ -58,14 +88,18 @@ public class XMLUtil{
         return messages;
     }
 
-    private static void createFile() throws ParserConfigurationException, TransformerException {
-        DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+    private static void createFile()
+            throws ParserConfigurationException, TransformerException, SAXException, IOException {
+        Document doc = getDoc();
 
-        Document doc = docBuilder.newDocument();
         Element rootElement = doc.createElement(MESSAGES);
         doc.appendChild(rootElement);
 
+        saveFile(doc);
+    }
+
+    private static void saveFile(Document doc)
+            throws ParserConfigurationException, TransformerException {
         Transformer transformer = getTransformer();
 
         DOMSource source = new DOMSource(doc);
@@ -73,7 +107,8 @@ public class XMLUtil{
         transformer.transform(source, result);
     }
 
-    private static Transformer getTransformer() throws TransformerConfigurationException {
+    private static Transformer getTransformer()
+            throws TransformerConfigurationException {
         TransformerFactory transformerFactory = TransformerFactory.newInstance();
         Transformer transformer = transformerFactory.newTransformer();
         transformer.setOutputProperty(OutputKeys.INDENT, "yes");

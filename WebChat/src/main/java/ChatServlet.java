@@ -61,6 +61,12 @@ public class ChatServlet extends HttpServlet {
         if(author == null || text == null) {
             throw new ParseException(ParseException.ERROR_UNEXPECTED_TOKEN);
         }
+        try {
+            XMLUtil.addMessage(date, author, text);
+        }
+        catch (Exception e){
+            System.out.println(e.getMessage());
+        }
         System.out.println(dateFormat.format(date) + author + " : " + text);
     }
 
