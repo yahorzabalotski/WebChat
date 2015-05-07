@@ -1,236 +1,152 @@
 /**
- * Created by ze on 3/15/15.
+ * Created by zE on 02.05.2015.
  */
 
-var token = "TN11EN";
-var editId = null;
-
 function run(){
-    document.getElementById('send').addEventListener("click", sendMessage, false);
-    document.getElementById('select_user_name').addEventListener("click", selectUser, false);
-    document.getElementById('clear').addEventListener("click", onClearClick, false);
-    restoreUser();
-    if(getUserName() != ""){
-        connect();
-    }
+    document.getElementById('signIn').addEventListener("click", onSignInClick, false);
+    document.getElementById('send').addEventListener("click", onSendClick, false);
+    document.getElementById('name').addEventListener("keydown", signInKeyDown, false);
+    document.getElementById('inputMessage').addEventListener("keydown", sendMessageKeyDown, false);
+    doGet();
 }
 
-function displayAllMessage(mess){
-    for(var i = 0; i < mess.length; i++){
-        updateMessageBox(mess[i]);
-    }
-}
-
-function onClearClick(){
-    document.getElementById('messageBox').innerHTML = "";
-}
-
-function getUserName(){
-    return document.getElementById("user_name").value;
-}
-
-function setUserName(name){
-    return document.getElementById("user_name").value = name;
-}
-
-function message(mess, id){
-    return {
-        user: getUserName(),
-        message: mess,
-        id: id
-    };
-}
-
-function sendMessage(){
-    if(editId == null) {
-        var mess = message(document.getElementById('message').value, "");
-        document.getElementById('message').value = "";
-        ajax('POST', 'http://localhost:8080/WebChat/chat', JSON.stringify(mess), function (serverResponse) {
-        }, function (error) {
-            alert(error)
-        });
+function onSignInClick() {
+    var name = document.getElementById('name').value;
+    if (name != "" && name.length > 3) {
+        addUser(name);
+        $("[data-dismiss=modal]").trigger({ type: "click" });
     }
     else{
-        var mess = message(document.getElementById('message').value, editId);
-        document.getElementById('message').value = "";
-        ajax('PUT', 'http://localhost:8080/WebChat/chat', JSON.stringify(mess), function (serverResponse) {
-        }, function (error) {
-            alert(error)
-        });
-        editId = null;
+        $('#nameBlock').addClass('has-error');
+        $('#nameError').text("Name ...");
+        $('#nameError').show();
     }
 }
 
-function updateMessageBox(tmp){
-    var id = tmp.user + tmp.id;
-    document.getElementById('messageBox').appendChild(createMessageTable(tmp.id, tmp));
-    document.getElementById(tmp.id + 'b').addEventListener("click", onClickRemoveMessage, false);
-    document.getElementById(tmp.id + 'e').addEventListener("click", onClickEditMessage, false);
-    document.getElementById('message').value = "";
-}
-
-function createMessageTable(id, mess){
-    var messTable = document.createElement('table');
-    messTable.setAttribute('id', id);
-    messTable.setAttribute('class', 'messageTable');
-    messTable.innerHTML = "<tr>" +
-    "<td class=\"firstColumn\"><div class=\"divUserName\">" + mess.user + ':' + "</div></td>" +
-    "<td class=\"messageColumn\"><div class=\"divMessageBox\" id=\"" + id + 't' + "\">" + mess.message + "</div></td>" +
-    "<td class=\"editButtonColumn\"><button id=\"" + id + 'e' + "\" class=\"editMessageButton\"><img src=\"edit.gif\"></button></td>" +
-    "<td class='deleteButtonColumn'><button class='editMessageButton' id=\"" + id + 'b' + "\"><img src=\"close.png\"></button></td>" +
-    "</tr>";
-    return messTable;
-}
-
-function deleteMessage(id){
-    var del = document.getElementById(id);
-    document.getElementById('messageBox').removeChild(del);
-}
-
-
-function onClickEditMessage(){
-    editId = this.id.substring(0, this.id.length - 1);
-    document.getElementById('message').value = document.getElementById(editId + 't').innerHTML;
-}
-
-function editMessage(id, text){
-    document.getElementById(id + 't').innerHTML = text;
-}
-
-function onClickRemoveMessage(){
-    var messId = this.id.substring(0, this.id.length - 1);
-    ajax('DELETE', 'http://localhost:8080/WebChat/chat', JSON.stringify(message("", messId)),  function(serverResponse){
-    }, function(error){ alert(error)});
-}
-
-function messageTextFieldKeyDown(e){
-    e = e||window.event;
-    if(e.keyCode===13){
-        sendMessage();
-    }
-}
-
-function selectUser() {
-    var userName = document.getElementById('user_name').value;
-    if(userName != ""){
-        storeUser();
-        connect();
-    }
-}
-
-function restoreUser(){
-    if(typeof(Storage) == "undefined"){
-        alert('localStorage is not accessible');
-        return;
-    }
-    var item = localStorage.getItem("userName");
-    setUserName(item);
-}
-
-function storeUser(){
-    if(typeof(Storage) == "undefined"){
-        alert('localStorage is not accessible');
-        return;
-    }
-    localStorage.setItem("userName", getUserName());
-}
-
-/*
-function addUserName(name){
-    var option = document.createElement('option');
-    option.innerHTML = name;
-    document.getElementById('names').appendChild(option);
-}
-*/
-
-function output(value){
-    alert(value);
-}
-
-function defaultErrorHandler(message) {
-    console.error(message);
-    output(message);
-}
-
-function isError(text) {
-    return false;
-    if(text == "")
-        return false;
-
-    try {
-        var obj = JSON.parse(text);
-        return !!obj.error;
-    } catch(ex) {
-        return true;
-    }
-}
-
-function ajax(method, url, data, continueWith , continueWithError) {
-    var xhr = new XMLHttpRequest();
-
-    continueWithError = continueWithError || defaultErrorHandler;
-    xhr.open(method /* || 'GET'*/, url, true);
-
-    xhr.onload = function () {
-        if (xhr.readyState !== 4)
-            return;
-
-        if(xhr.status != 200) {
-            continueWithError('Error on the server side, response ' + xhr.status);
-            return;
+function doGet(){
+    $.ajax({
+        method: 'GET',
+        url: 'http://localhost:8080/WebChat/chat',
+        success: function(serverResponse){
+            parseResponse(serverResponse);
         }
-
-        if(isError(xhr.responseText)) {
-            continueWithError('Error on the server side, response ' + xhr.responseText);
-            return;
-        }
-
-        continueWith(xhr.responseText);
-    };
-
-    xhr.ontimeout = function () {
-        ontinueWithError('Server timed out !');
-    }
-
-    xhr.onerror = function (e) {
-        var errMsg = 'Server connection error !\n'+
-            '\n' +
-            'Check if \n'+
-            '- server is active\n'+
-            '- server sends header "Access-Control-Allow-Origin:*"';
-
-        continueWithError(errMsg);
-    };
-
-    xhr.send(data);
+    });
 }
 
-function connect(){
-    setInterval(function(){
-        ajax('GET', 'http://localhost:8080/WebChat/chat?token=' + token, function(error){ alert(error)}, getLastMessage)
-    }, 1000);
-}
-
-function getLastMessage(serverResponse){
-    var tmp = JSON.parse(serverResponse);
-    doAllInstruction(tmp.instruction);
-    if(tmp.token.toString() != "TN11EN") {
-        token = tmp.token;
-    }
+function parseResponse(serverResponse){
+    var response = JSON.parse(serverResponse);
+    alert(response);
+    alert(response[0]);
+    doAllInstruction(response);
 }
 
 function doAllInstruction(instruction){
-    for(var i = 0; i < instruction.length; i++){
-        doInstruction(instruction[i]);
+    for(var i = 0; i < instruction.length; i += 2){
+        doInstruction(instruction[i], instruction[i + 1]);
     }
 }
 
-function doInstruction(instruction){
-    if("add" == instruction.state){
-        updateMessageBox(JSON.parse(instruction.message));
-    } else if("del" == instruction.state){
-        deleteMessage(JSON.parse(instruction.message).id);
-    } else if("edit" == instruction.state){
-        editMessage(JSON.parse(instruction.message).id, JSON.parse(instruction.message).message);
+function doInstruction(instruction, value){
+    var tmp = JSON.parse(value);
+    if("add" === instruction){
+        document.getElementById('messageBox').appendChild(createMessage(tmp.date, tmp.author, tmp.text));
+        document.getElementById('messageBox').scrollTop = document.getElementById('messageBox').scrollHeight;
     }
+}
+
+function addUser(name) {
+    var userBox = document.getElementById('userBox');
+    userBox.appendChild(createNewUser(name));
+}
+
+function createNewUser(name) {
+    var div = document.createElement('div');
+    div.setAttribute('id','username' + name);
+    div.innerText = name;
+    return div;
+}
+
+function getUserName(){
+    return document.getElementById('userBox').getElementsByTagName('*')[0].innerText;
+}
+
+function getMessage(){
+    return document.getElementById('inputMessage').value;
+}
+
+function setMessage(text) {
+    document.getElementById('inputMessage').value = text;
+}
+
+function setEdit(value) {
+    document.getElementById('inputMessage').setAttribute('checked', value);
+}
+
+function isEdit() {
+    var cheak = document.getElementById('inputMessage').getAttribute('checked');
+    if(cheak == 'true') {
+        return true;
+    }
+    return false;
+}
+
+function onSendClick(){
+    var mess = message(getMessage());
+    setMessage("");
+    var method = 'POST';
+    if(isEdit()){
+       method = 'PUT';
+        setEdit('false');
+    }
+
+    $.ajax({
+        method: method,
+        url: 'http://localhost:8080/WebChat/chat',
+        data: JSON.stringify(mess)
+    });
+
+
+    //add mess
+    document.getElementById('messageBox').appendChild(createMessage(1, getUserName(), mess.text));
+    document.getElementById('messageBox').scrollTop = document.getElementById('messageBox').scrollHeight;
+}
+
+function message(mess){
+    return {
+        author: getUserName(),
+        text: mess
+    };
+}
+
+function signInKeyDown(e){
+    e = e||window.event;
+    if(e.keyCode === 13){
+        onSignInClick();
+    }
+}
+
+function isAllowMessage(mess){
+    if(mess != ""){
+        return true;
+    }
+    return false;
+}
+
+function sendMessageKeyDown(e){
+    e = e||window.event;
+    if(e.keyCode === 13 && isAllowMessage(getMessage())){
+        onSendClick();
+    }
+}
+
+function createMessage(date, author, text) {
+    var div = document.createElement('div');
+    div.setAttribute("class", "mainDiv");
+    div.innerHTML = "<div style='display: inline-block; width: 95%; columns:  2'>" +
+    "<p style='display:inline; padding-left: 20px'>" + author + ":" + "</p>" +
+    "<p style='display:inline; word-break: break-all; padding-left: 20px'>" + text +"</p></div>" +
+    "<div style='display: inline-block; vertical-align: top'>" +
+    "<span class='glyphicon glyphicon-remove' style='padding-right: 10px'></span>" +
+    "<span class='glyphicon glyphicon-pencil' style='padding-right: 10px'></span></div>";
+    return div;
 }

@@ -1,46 +1,69 @@
-.messageTable{
+html{
+    height: 100%;
+}
+body{
     width: 100%;
+    height: 100%;
+    margin: 0px;
+}
+.topSection{
+    width: 100%;
+    height: 10%;
+    background-color: yellow;
+}
+.messageBox{
+    width: 85%;
+    max-width: 85%;
+    height: 83%;
+    table-layout: fixed;
+    overflow-y: scroll;
+    /*background-color: chocolate;*/
+}
+.userBox{
+    width: 15%;
+    height: 83%;
+    position: absolute;
+    left: 85%;
+    top: 10%;
+    background-color: darkgreen;
+}
+.inputBox{
+    width: 100%;
+    height: 7%;
+    position: relative;
+    background-color: darkviolet;
+}
+.helpDiv{
+    position: absolute;
+    top: 50%;
+    width: 100%;
+    margin-top: -0.625em;
+    text-align: center;
+}
+.inputMessage{
+    width: 95%;
 }
 
-.arrow{
-
-    text-align: right;
+#name {
+    width: 75%;
 }
 
-.firstColumn{
-    width: 4%;
+.message{
+    display: table;
 }
 
-.messageColumn{
-    width:  90%;
-}
-
-.editButtonColumn{
-    width: 3%;
-}
-
-.deleteButtonColumn{
-    width: 3%;
-}
-
-.divUserName{
+.mainDiv{
+    width: 100%;
     display: inline-block;
-    text-align: left;
-    color: chartreuse;
 }
 
-.divMessageBox{
-    display: inline-block;
-    text-align: left;
-    width: 88%;
-    color: yellow;
+.messText{
+    width: 100%;
     word-wrap: break-word;
+
 }
 
-.editMessageButton{
-    width: 15px;
-    height: 15px;
-    border: 0px;
-    padding: 0px;
+.deleteButton{
+    border: none;
+    background-color: transparent;
 }
-
