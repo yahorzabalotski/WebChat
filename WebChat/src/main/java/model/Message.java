@@ -10,6 +10,13 @@ public class Message{
     private String text;
     private Date date;
 
+    public Message(){
+        id = -1;
+        userId = -1;
+        text = "";
+        date = new Date();
+    }
+
     public Message(Integer id, Integer userId, String text, Date date){
         this.id = id;
         this.userId = userId;
