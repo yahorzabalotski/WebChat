@@ -10,7 +10,7 @@ import java.sql.ResultSet;
 import org.apache.log4j.Logger;
 
 public class UserDAOImpl implements UserDAO {
-    private static Logger logger = Logger.getLogger(MessageDAOImpl.class.getName());
+    private static Logger logger = Logger.getLogger(UserDAOImpl.class.getName());
 
     @Override
     public void add(User user){
