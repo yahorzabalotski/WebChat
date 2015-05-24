@@ -20,10 +20,11 @@ public class MessageDAOImpl implements MessageDAO {
     @Override
     public void add(Message message){
         try(Connection connection = DatabaseManager.getConnection();
-            PreparedStatement statement = connection.prepareStatement("INSERT INTO message (id, text, date, user_id) values(DEFAULT, ?, ?, ?);")) {
-            statement.setString(1, message.getText());
-            statement.setDate(2, new java.sql.Date(message.getDate().getTime()));
-            statement.setInt(3, message.getUserId());
+            PreparedStatement statement = connection.prepareStatement("INSERT INTO message (id, text, date, user_id) values(?, ?, ?, ?);")) {
+            statement.setInt(1, message.getId());
+            statement.setString(2, message.getText());
+            statement.setDate(3, new java.sql.Date(message.getDate().getTime()));
+            statement.setInt(4, message.getUserId());
             statement.executeQuery();
         } catch (SQLException e) {
             logger.error(e);
