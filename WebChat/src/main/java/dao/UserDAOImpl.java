@@ -1,6 +1,10 @@
+import java.lang.Exception;
+import java.lang.Integer;
 import java.lang.Override;
+import java.lang.System;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import java.sql.SQLException;
 import java.sql.Connection;
@@ -15,10 +19,18 @@ public class UserDAOImpl implements UserDAO {
     @Override
     public void add(User user){
         try(Connection connection = DatabaseManager.getConnection();
-        PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO users (id, name) VALUES (DEFAULT , ?);")){
+        PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO users (id, name, lastMessageId) VALUES (DEFAULT , ?, DEFAULT );")){
             preparedStatement.setString(1, user.getName());
-            preparedStatement.executeQuery();
+            preparedStatement.executeUpdate();
+            Integer insertId = DatabaseUtil.getLastInsertId(connection);
+            if(insertId != null) {
+                user.setId(insertId);
+            } else {
+                throw new Exception("Can't insert user in database.");
+            }
         } catch (SQLException e) {
+            logger.error(e);
+        } catch (Exception e) {
             logger.error(e);
         }
     }
@@ -29,7 +41,7 @@ public class UserDAOImpl implements UserDAO {
         PreparedStatement preparedStatement = connection.prepareStatement("UPDATE users SET name = ? WHERE id = ?;")){
             preparedStatement.setString(1, user.getName());
             preparedStatement.setInt(2, user.getId());
-            preparedStatement.executeQuery();
+            preparedStatement.executeUpdate();
         } catch (SQLException e){
             logger.error(e);
         }
@@ -69,7 +81,6 @@ public class UserDAOImpl implements UserDAO {
     @Override
     public List<User> selectAfter(Integer id){
         List<User> list = new ArrayList<User>();
-
         try(Connection connection = DatabaseManager.getConnection();
         PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM users WHERE id > ?")) {
             preparedStatement.setInt(1, id);
@@ -82,5 +93,34 @@ public class UserDAOImpl implements UserDAO {
             logger.error(e);
         }
         return list;
+    }
+
+    @Override
+    public Integer getLastMessageId(Integer id) {
+        Integer messageId = null;
+        try(Connection connection = DatabaseManager.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT lastMessageId FROM users WHERE id = ?")) {
+            preparedStatement.setInt(1, id);
+            try(ResultSet resultSet = preparedStatement.executeQuery()){
+                if (resultSet.next()){
+                    messageId = new Integer(resultSet.getInt(1));
+                }
+            }
+        } catch (SQLException e) {
+            logger.error(e);
+        }
+        return messageId;
+    }
+
+    @Override
+    public void setLastMessageId(Integer userId, Integer messageId) {
+        try(Connection connection = DatabaseManager.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement("UPDATE users SET lastMessageId = ? WHERE id = ?")){
+            preparedStatement.setInt(1, messageId);
+            preparedStatement.setInt(2, userId);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            logger.error(e);
+        }
     }
 }

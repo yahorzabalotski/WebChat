@@ -7,7 +7,7 @@ function run(){
     document.getElementById('send').addEventListener("click", onSendClick, false);
     document.getElementById('name').addEventListener("keydown", signInKeyDown, false);
     document.getElementById('inputMessage').addEventListener("keydown", sendMessageKeyDown, false);
-    doGet();
+    setEdit("");
 }
 
 function onSignInClick() {
@@ -15,6 +15,7 @@ function onSignInClick() {
     if (name != "" && name.length > 3) {
         addUser(name);
         $("[data-dismiss=modal]").trigger({ type: "click" });
+        postUser(name);
     }
     else{
         $('#nameBlock').addClass('has-error');
@@ -23,34 +24,32 @@ function onSignInClick() {
     }
 }
 
-function doGet(){
-    $.ajax({
-        method: 'GET',
-        url: 'http://localhost:8080/WebChat/chat',
-        success: function(serverResponse){
-            parseResponse(serverResponse);
-        }
+function postUser(userName){
+    var data = JSON.stringify({name: userName});
+    doRequest('POST', data).done(function(Response){
+        (function poll() {
+            var jqxhr = doRequest('GET');
+            jqxhr.done(function(response){
+                parseResponse(response);
+            });
+            jqxhr.error(function(response){
+                alert('error');
+            });
+            jqxhr.always(function(response){
+                poll();
+            })
+        })();
+    }).error(function(response){
+        alert("Post error.");
     });
 }
 
-function parseResponse(serverResponse){
-    var response = JSON.parse(serverResponse);
-    alert(response);
-    alert(response[0]);
-    doAllInstruction(response);
-}
-
-function doAllInstruction(instruction){
-    for(var i = 0; i < instruction.length; i += 2){
-        doInstruction(instruction[i], instruction[i + 1]);
-    }
-}
-
-function doInstruction(instruction, value){
-    var tmp = JSON.parse(value);
-    if("add" === instruction){
-        document.getElementById('messageBox').appendChild(createMessage(tmp.date, tmp.author, tmp.text));
-        document.getElementById('messageBox').scrollTop = document.getElementById('messageBox').scrollHeight;
+function parseResponse(response){
+    if( response != "") {
+        var mess = JSON.parse(response);
+        for (var i = 0; i < mess.length; i++) {
+            viewMessage(JSON.parse(mess[i]));
+        }
     }
 }
 
@@ -71,50 +70,45 @@ function getUserName(){
 }
 
 function getMessage(){
-    return document.getElementById('inputMessage').value;
+    return $('#inputMessage').val();
 }
 
 function setMessage(text) {
-    document.getElementById('inputMessage').value = text;
+    $('#inputMessage').val(text);
 }
 
 function setEdit(value) {
-    document.getElementById('inputMessage').setAttribute('checked', value);
+    $('#inputMessage').data("editId", value);
+}
+
+function getEdit() {
+    return $('#inputMessage').data("editId");
 }
 
 function isEdit() {
-    var cheak = document.getElementById('inputMessage').getAttribute('checked');
-    if(cheak == 'true') {
+    var cheak = $("#inputMessage").data("editId");
+    if(cheak != "") {
         return true;
     }
     return false;
 }
 
 function onSendClick(){
-    var mess = message(getMessage());
+    var mess = message(getMessage(), 0);
     setMessage("");
-    var method = 'POST';
-    if(isEdit()){
-       method = 'PUT';
-        setEdit('false');
+    if(isEdit()) {
+        mess.id = getEdit();
+        setEdit("");
     }
-
-    $.ajax({
-        method: method,
-        url: 'http://localhost:8080/WebChat/chat',
-        data: JSON.stringify(mess)
-    });
-
-
-    //add mess
-    document.getElementById('messageBox').appendChild(createMessage(1, getUserName(), mess.text));
-    document.getElementById('messageBox').scrollTop = document.getElementById('messageBox').scrollHeight;
+    var data = '{\"text\":\"' + mess.text + '\", \"id\":\"' + mess.id + '\"}';
+    doRequest('PUT', data);
 }
 
-function message(mess){
+function message(mess, id){
     return {
         author: getUserName(),
-        text: mess
+        text: mess,
+        id: id
     };
 }
 
@@ -139,14 +133,81 @@ function sendMessageKeyDown(e){
     }
 }
 
-function createMessage(date, author, text) {
+function viewMessage(message){
+    var element = document.getElementById(message.id);
+    if(element != null) {
+        element.firstElementChild.children[1].innerHTML = message.text;
+    } else {
+        $('#messageBox').append(createMessage(message));
+    }
+
+    document.getElementById('messageBox').scrollTop = document.getElementById('messageBox').scrollHeight;
+}
+
+function createMessage(mess) {
     var div = document.createElement('div');
     div.setAttribute("class", "mainDiv");
-    div.innerHTML = "<div style='display: inline-block; width: 95%; columns:  2'>" +
-    "<p style='display:inline; padding-left: 20px'>" + author + ":" + "</p>" +
-    "<p style='display:inline; word-break: break-all; padding-left: 20px'>" + text +"</p></div>" +
-    "<div style='display: inline-block; vertical-align: top'>" +
-    "<span class='glyphicon glyphicon-remove' style='padding-right: 10px'></span>" +
-    "<span class='glyphicon glyphicon-pencil' style='padding-right: 10px'></span></div>";
+    div.setAttribute("id", mess.id);
+    div.appendChild(getMessageContent(mess));
+    var innerDiv = document.createElement('div');
+    innerDiv.setAttribute("style","display: inline-block; vertical-align: top");
+    innerDiv.appendChild(getRemoveMessageSpan());
+    innerDiv.appendChild(getEditMessageSpan());
+    div.appendChild(innerDiv);
     return div;
+}
+
+function getMessageContent(mess){
+    var div = document.createElement('div');
+    div.setAttribute("style", 'display: inline-block; width: 95%; columns:  2')
+    var author = document.createElement('p');
+    author.setAttribute("style", 'display:inline; padding-left: 20px');
+    author.innerHTML = mess.author;
+    var text = document.createElement('p');
+    text.setAttribute("style", 'display:inline; word-break: break-all; padding-left: 20px');
+    text.innerHTML = mess.text;
+    div.appendChild(author);
+    div.appendChild(text);
+    return div;
+}
+
+function getRemoveMessageSpan(){
+    var span = document.createElement('span');
+    span.setAttribute("class", "glyphicon glyphicon-remove");
+    span.setAttribute("style", "padding-right: 10px");
+    span.addEventListener("click", onRemoveClick, false);
+    return span;
+}
+
+function getEditMessageSpan() {
+    var span = document.createElement('span');
+    span.setAttribute("class", "glyphicon glyphicon-pencil");
+    span.setAttribute("style", "padding-right: 10px");
+    span.addEventListener("click", onEditClick, false);
+    return span;
+}
+
+function onEditClick(e){
+    var sender = (e && e.target) || (window.event && window.event.srcElement);
+    var mess = sender.parentElement.parentElement;
+    var text = mess.children[0].children[1].innerHTML;
+    if(text != "") {
+        setEdit(mess.id);
+        $('#inputMessage').val(text);
+    }
+}
+
+function onRemoveClick(e){
+    var sender = (e && e.target) || (window.event && window.event.srcElement);
+    var delId = sender.parentElement.parentElement.id;
+    var data = "{\"id\":\"" + delId + "\"}";
+    doRequest('DELETE', data);
+}
+
+function doRequest(method, info){
+    return $.ajax({
+        method: method,
+        url: 'http://localhost:8080/WebChat/chat',
+        data: info
+    });
 }

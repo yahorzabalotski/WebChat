@@ -20,25 +20,33 @@ public class MessageDAOImpl implements MessageDAO {
     @Override
     public void add(Message message){
         try(Connection connection = DatabaseManager.getConnection();
-            PreparedStatement statement = connection.prepareStatement("INSERT INTO message (id, text, date, user_id) values(?, ?, ?, ?);")) {
-            statement.setInt(1, message.getId());
-            statement.setString(2, message.getText());
-            statement.setDate(3, new java.sql.Date(message.getDate().getTime()));
-            statement.setInt(4, message.getUserId());
-            statement.executeQuery();
+            PreparedStatement statement = connection.prepareStatement("INSERT INTO messages (id, text, date, user_id) values(DEFAULT , ?, ?, ?);")) {
+            statement.setString(1, message.getText());
+            statement.setDate(2, new java.sql.Date(message.getDate().getTime()));
+            statement.setInt(3, message.getUserId());
+            statement.executeUpdate();
+            Integer insertId = DatabaseUtil.getLastInsertId(connection);
+            if(insertId != null) {
+                message.setId(insertId);
+            } else {
+                throw new Exception("Can't insert message in database.");
+            }
         } catch (SQLException e) {
+            logger.error(e);
+        } catch (Exception e) {
             logger.error(e);
         }
     }
 
     @Override
     public void update(Message message){
+        System.out.println("update message");
         try(Connection connection = DatabaseManager.getConnection();
         PreparedStatement statement = connection.prepareStatement("UPDATE messages SET text = ?, date = ? WHERE id = ?;")){
             statement.setString(1, message.getText());
             statement.setDate(2, new java.sql.Date(message.getDate().getTime()));
             statement.setInt(3, message.getId());
-            statement.executeQuery();
+            statement.executeUpdate();
         } catch (SQLException e) {
             logger.error(e);
         }
@@ -58,7 +66,6 @@ public class MessageDAOImpl implements MessageDAO {
     @Override
     public Message selectById(Integer id){
         Message message = null;
-
         try(Connection connection = DatabaseManager.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM messages WHERE id = ?;")){
             preparedStatement.setInt(1, id);
@@ -76,19 +83,17 @@ public class MessageDAOImpl implements MessageDAO {
     @Override
     public List<Message> selectAfter(Integer id){
         List<Message> list = new ArrayList<Message>();
-
         try(Connection connection = DatabaseManager.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM messages WHERE id > ?;")){
             preparedStatement.setInt(1, id);
             try(ResultSet resultSet = preparedStatement.executeQuery()) {
-                if (resultSet.next()) {
+                while (resultSet.next()) {
                     list.add(new Message(resultSet.getInt("id"), resultSet.getInt("user_id"), resultSet.getString("text"), resultSet.getDate(3)));
                 }
             }
         } catch (SQLException e) {
             logger.error(e);
         }
-
         return list;
     }
 }
