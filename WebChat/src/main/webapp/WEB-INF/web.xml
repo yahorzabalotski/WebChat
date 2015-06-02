@@ -12,5 +12,18 @@
         <servlet-name>WebChat</servlet-name>
         <url-pattern>/chat</url-pattern>
     </servlet-mapping>
+    <error-page>
+        <error-code>404</error-code>
+        <location>/WEB-INF/errors/404.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>400</error-code>
+        <location>/WEB-INF/errors/400.jsp</location>
+    </error-page>
+
+    <error-page>
+        <error-code>500</error-code>
+        <location>/WEB-INF/errors/500.jsp</location>
+    </error-page>
 </web-app>
 

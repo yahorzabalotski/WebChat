@@ -62,6 +62,7 @@ public class ChatServlet extends HttpServlet{
                 request.getSession().setAttribute("userId", user.getId());
             } else {
                 logger.info("Bad user name in session.");
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "'token' parameter needed");
             }
         } catch (IOException e){
             logger.error(e);

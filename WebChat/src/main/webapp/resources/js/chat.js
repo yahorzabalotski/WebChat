@@ -7,6 +7,12 @@ function run(){
     document.getElementById('send').addEventListener("click", onSendClick, false);
     document.getElementById('name').addEventListener("keydown", signInKeyDown, false);
     document.getElementById('inputMessage').addEventListener("keydown", sendMessageKeyDown, false);
+    document.getElementById('LogOut').addEventListener("click", onLogOutClick, false);
+    $(function() {
+        //$('#messageBox').perfectScrollbar();
+        Ps.initialize(document.getElementById('messageBox'));
+        Ps.suppressScrollY = true;
+    });
     setEdit("");
 }
 
@@ -24,6 +30,10 @@ function onSignInClick() {
     }
 }
 
+function onLogOutClick(){
+    location.reload();
+}
+
 function postUser(userName){
     var data = JSON.stringify({name: userName});
     doRequest('POST', data).done(function(Response){
@@ -31,16 +41,17 @@ function postUser(userName){
             var jqxhr = doRequest('GET');
             jqxhr.done(function(response){
                 parseResponse(response);
+                setGoodServerStatus();
             });
             jqxhr.error(function(response){
-                alert('error');
+                setBadServerStatus()
             });
             jqxhr.always(function(response){
                 poll();
             })
         })();
     }).error(function(response){
-        alert("Post error.");
+        setBadServerStatus()
     });
 }
 
@@ -53,9 +64,16 @@ function parseResponse(response){
     }
 }
 
+function setBadServerStatus() {
+    document.getElementById('serverStatus').style.color = 'red';
+}
+
+function setGoodServerStatus() {
+    document.getElementById('serverStatus').style.color = 'green';
+}
+
 function addUser(name) {
-    var userBox = document.getElementById('userBox');
-    userBox.appendChild(createNewUser(name));
+    document.getElementById('user').innerHTML = name;
 }
 
 function createNewUser(name) {
@@ -66,7 +84,8 @@ function createNewUser(name) {
 }
 
 function getUserName(){
-    return document.getElementById('userBox').getElementsByTagName('*')[0].innerText;
+    return document.getElementById('user').innerHTML;
+
 }
 
 function getMessage(){
@@ -135,11 +154,13 @@ function sendMessageKeyDown(e){
 
 function viewMessage(message){
     var element = document.getElementById(message.id);
+
     if(element != null) {
         element.firstElementChild.children[1].innerHTML = message.text;
     } else {
         $('#messageBox').append(createMessage(message));
     }
+
 
     document.getElementById('messageBox').scrollTop = document.getElementById('messageBox').scrollHeight;
 }
@@ -148,33 +169,49 @@ function createMessage(mess) {
     var div = document.createElement('div');
     div.setAttribute("class", "mainDiv");
     div.setAttribute("id", mess.id);
+    //div.innerHTML = getMessageContent1(mess);
     div.appendChild(getMessageContent(mess));
     var innerDiv = document.createElement('div');
     innerDiv.setAttribute("style","display: inline-block; vertical-align: top");
-    innerDiv.appendChild(getRemoveMessageSpan());
-    innerDiv.appendChild(getEditMessageSpan());
+    if(getUserName() == mess.author) {
+        innerDiv.appendChild(getRemoveMessageSpan());
+        innerDiv.appendChild(getEditMessageSpan());
+
+    }
     div.appendChild(innerDiv);
     return div;
 }
 
 function getMessageContent(mess){
     var div = document.createElement('div');
-    div.setAttribute("style", 'display: inline-block; width: 95%; columns:  2')
+    div.setAttribute("style", 'display: inline-block; width: 95%; columns:  2; paddin-left: 10px; margin-left: 10px; ')
     var author = document.createElement('p');
-    author.setAttribute("style", 'display:inline; padding-left: 20px');
-    author.innerHTML = mess.author;
+    author.setAttribute("style", 'display:inline; padding-left: 20px; word-wrap: break-word;');
+    author.innerHTML ="<b style='padding-left: 10px; margin-left: 10px'>" +  mess.author + "</b>";
+    author.style.color = "rgb(" + Math.floor( Math.random() * 255) +  "," + Math.floor( Math.random() * 255) + "," + Math.floor( Math.random() * 255) + ")"
     var text = document.createElement('p');
-    text.setAttribute("style", 'display:inline; word-break: break-all; padding-left: 20px');
+    text.setAttribute("style", 'display:inline; word-break: break-word; padding-left: 20px;');
     text.innerHTML = mess.text;
+    text.style.color = "rgb(" + Math.floor( Math.random() * 255) +  "," + Math.floor( Math.random() * 255) + "," + Math.floor( Math.random() * 255) + ")"
     div.appendChild(author);
     div.appendChild(text);
     return div;
 }
 
+function getMessageContent1(mess) {
+    var div = document.createElement('div');
+    div.innerHTML = "<p style='display:inline; padding-left: 20px; color='" +
+    + "rgb(" + Math.floor( Math.random() * 255) +  "," + Math.floor( Math.random() * 255) + "," + Math.floor( Math.random() * 255) + ")" +
+    + "'><b>" + mess.author + "</b></p>" +
+    "<p style='display:inline; word-break: break-all; padding-left: 20px; color='" +
+    + "rgb(" + Math.floor( Math.random() * 255) +  "," + Math.floor( Math.random() * 255) + "," + Math.floor( Math.random() * 255) + ")"
+    + "'></p>";
+}
+
 function getRemoveMessageSpan(){
     var span = document.createElement('span');
     span.setAttribute("class", "glyphicon glyphicon-remove");
-    span.setAttribute("style", "padding-right: 10px");
+    span.setAttribute("style", "padding-right: 10px; color:red");
     span.addEventListener("click", onRemoveClick, false);
     return span;
 }
@@ -182,7 +219,7 @@ function getRemoveMessageSpan(){
 function getEditMessageSpan() {
     var span = document.createElement('span');
     span.setAttribute("class", "glyphicon glyphicon-pencil");
-    span.setAttribute("style", "padding-right: 10px");
+    span.setAttribute("style", "padding-right: 10px; color: green;");
     span.addEventListener("click", onEditClick, false);
     return span;
 }
